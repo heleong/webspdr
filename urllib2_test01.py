@@ -1,23 +1,21 @@
 #!/usr/bin/python
 
-import urllib2
-import cookielib
+from urllib.request import build_opener
+import urllib.request
+import urllib.error
+from http.cookiejar import CookieJar
 
-cookie = cookielib.CookieJar()
-opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
-#req = urllib2.Request('http://bbs.csdn.net/')
-req = urllib2.Request('http://www.baidu.com/')
+cookie = CookieJar()
+opener = build_opener(urllib.request.HTTPCookieProcessor(cookie))
+req = urllib.request.Request('http://www.baidu.com/')
 
 try: response = opener.open(req)
 
-except urllib2.URLError, e:
-
-    print e.code
-    print e.reason
-    print type(e.reason)
-
+except urllib.error.URLError as e:
+    print(e.code)
+    print(e.reason)
+    print(type(e.reason))
 
 for i in cookie:
-    print 'Name = ' + i.name
-    print 'Value = ' + i.value
-
+    print('Name = ' + i.name)
+    print('Value = ' + i.value)
