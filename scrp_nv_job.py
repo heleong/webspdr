@@ -9,6 +9,7 @@ from http.cookiejar import CookieJar
 import re, datetime, time
 from selenium import webdriver
 import logging
+import pymongo
 
 class Throttle(object):
     """Class for throttling b/w requests to the same domain"""
@@ -119,6 +120,12 @@ if __name__ == '__main__':
     #TODO: change total results matching from split()[0] to regex matching
     total = span_total_results.text.split(' ')[0]
     logging.info("Total open: " + total)
+    #Get today's new open #
+    lis = br.find_elements_by_tag_name("li")
+    today_open_num = 0
+    for i in lis:
+        if i.text.find("Posted Today") != -1:
+            today_open_num += 1
 
     ids = {"jobcategory": "wd-Facet-jobFamilyGroup", \
             "countries": "wd-Facet-locationHierarchy1", \
@@ -127,7 +134,11 @@ if __name__ == '__main__':
             "full_part_time": "wd-Facet-timeType"}
     #ids = {"jobcategory": "wd-Facet-jobFamilyGroup"}
 
-    jb_sum = {"total": total}
+    #
+    #connect to local mongodb localhost:27017
+    #
+    client = pymongo.MongoClient("localhost", 27017)
+    db = client.nvidiajobs
 
     for k, v in ids.items():
         #find each job category section
@@ -137,13 +148,23 @@ if __name__ == '__main__':
         #ex_btn = el.find_element_by_id("wd-icon-chevron-down")
         #ex_btn.click()
         #click 'more' to expand
-        more_btn = el.find_element_by_class_name("WDTR")
+        more_btn = el.find_element_by_css_selector("span[title=More]")
+
         if more_btn.is_displayed():
             more_btn.click()
         #find all categories
-        catgrs = el.find_elements_by_class_name("WJHF")
-        opens = el.find_elements_by_tag_name("span")  #NOTE - only useful from index [1,n-2]
-        print(opens[1].text)
+        catgrs = el.find_elements_by_tag_name("label")
+        opens = el.find_elements_by_tag_name("span")  #NOTE - opens data is only useful from index [1,n-2]
+        logging.info(str(opens[1].text))
+        data = {"total": total, "today_open": today_open_num}
         for i in range(len(catgrs)):
-            print(i, catgrs[i].text, i+2, opens[i+2].text)
-        print()
+            logging.info(str(i) + " " + str(catgrs[i].text) + " " + str(i+2) + " " + str(opens[i+2].text))
+            key = str(catgrs[i].text).replace(".","") #NOTE - Remove '.' to eliminate error from mongodb complaints about invalid key with '.'
+            value = int(str(opens[i+2].text)[1:-1])
+            data[key] = value
+
+        logging.info(data)
+        db[k].insert(data)
+
+    client.close()
+    br.quit()
