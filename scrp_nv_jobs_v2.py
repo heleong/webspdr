@@ -3,37 +3,63 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import pandas as pd
+import re
 
-# Set up the WebDriver (e.g., Chrome)
-driver = webdriver.Chrome()
+def scrape_nvidia_job_locations():
+    # Set up Chrome options
+    """chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode (no browser UI)
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")"""
+    
+    # Initialize the Chrome driver
+    #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    driver = webdriver.Chrome()
 
-try:
-    # Open the NVIDIA career site
-    driver.get("https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite")
+    try:
+        # Navigate to NVIDIA's job portal
+        print("Navigating to NVIDIA's job portal...")
+        driver.get("https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite")
+        
+        # Wait for the page to load and job listings to appear
+        wait = WebDriverWait(driver, 30)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "ul[role='list']")))
+        
+        # Give the page a moment to fully load
+        time.sleep(5)
+        
+        # Find all location elements
+        print("Extracting location information...")
+        filters = driver.find_elements(By.CSS_SELECTOR, "[data-uxi-widget-type='filterButton']")
+        
+        # Extract and clean location text
+        jobs = {}
+        tmp = {}
+        for f in filters:
+            # Open filter button one by one
+            f.click()
+            time.sleep(2)
+            # Get all selections of job locations
+            selections = driver.find_elements(By.CSS_SELECTOR, "[cursor='pointer']")
+            print(selections)
+            for s in selections:
+                # Iterate selections and add to tmp dictionary
+                tmp[s.text.split(" (")[0]] = int(s.text.split(" (")[-1].strip(')'))
+            print(tmp)
+            # Close filter button
+            f.click()
+            time.sleep(2)
+            jobs[f.text.strip()] = tmp
+            tmp = {}
+        print(jobs)
+        return jobs        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        # Close the browser
+        driver.quit()
 
-    # Wait for the job listings to load
-    WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "css-1q2dra3"))
-    )
-
-    # Scroll to load more jobs (if applicable)
-    for _ in range(1):  # Adjust the range for more scrolling
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(2)  # Wait for new jobs to load
-
-    locations = driver.find_elements(By.CLASS_NAME, "css-a4dzgn")
-    print("location length: ", len(locations))
-    for location in locations:
-        print(location.text)
-    TODO: extract job postings
-
-    # Extract job postings
-    #jobs = driver.find_elements(By.CLASS_NAME, "css-1q2dra3")
-    #for job in jobs:
-    #   title = job.find_element(By.CLASS_NAME, "css-a4dzgn").text
-    #   location = job.find_element(By.CLASS_NAME, "css-1wh1oc8").text
-    #   print(f"Title: {title}, Location: {location}")
-
-finally:
-    # Close the WebDriver
-    driver.quit()
+if __name__ == "__main__":
+    locations = scrape_nvidia_job_locations()
+    print(locations)
