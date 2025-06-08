@@ -1,23 +1,46 @@
+import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from pymongo import MongoClient
 import time
 import pandas as pd
 import re
 
 #TODO: Persist data to a database MongoDB
-
-def scrape_nvidia_job_locations():
-    # Set up Chrome options
-    """chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode (no browser UI)
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")"""
+def persist_data(server = "mongodb://localhost:27017/", database = "nvjobs", collection = "jobs", data = None):
+    client = MongoClient(server)
     
-    # Initialize the Chrome driver
-    #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    driver = webdriver.Chrome()
+    # Test the connection
+    try:
+        client.server_info()
+        print("Successfully connected to MongoDB!")
+        db = client[database]
+        c = db[collection]
+        if data is not None:
+            doc = {"timestamp": datetime.datetime.now(), "data": data}
+            c.insert_one(doc)
+            print("Data inserted successfully!")
+            return True
+        else:
+            print("No data to insert")
+            return False
+    except Exception as e:
+        print(f"Failed to connect to MongoDB: {e}")
+        return False
+    finally:
+        client.close()
+
+def scrape_nvidia_jobs():
+    # Set up Chrome options
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--headless=new")  # Use new headless mode
+    chrome_options.add_argument("--window-size=1920,1080")  # Set window size
+    chrome_options.add_argument("--disable-gpu")  # Disable GPU hardware acceleration
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    driver = webdriver.Chrome(options=chrome_options)
 
     try:
         # Navigate to NVIDIA's job portal
@@ -62,7 +85,7 @@ def scrape_nvidia_job_locations():
             time.sleep(2)
             jobs[f.text.strip()] = tmp
             tmp = {}
-        print(jobs)
+        #print(jobs)
         return jobs        
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -71,5 +94,5 @@ def scrape_nvidia_job_locations():
         driver.quit()
 
 if __name__ == "__main__":
-    locations = scrape_nvidia_job_locations()
-    print(locations)
+    jobs = scrape_nvidia_jobs()
+    persist_data(data = jobs)
