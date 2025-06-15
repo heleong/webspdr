@@ -8,7 +8,6 @@ import time
 import pandas as pd
 import re
 
-#TODO: Persist data to a database MongoDB
 def persist_data(server = "mongodb://localhost:27017/", database = "nvjobs", collection = "jobs", data = None):
     client = MongoClient(server)
     
