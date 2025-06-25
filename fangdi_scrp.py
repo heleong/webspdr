@@ -15,7 +15,7 @@ def fangdi_scrp(project_id="d40383f20b61fd2a", id="024975", build_prefix="富业
     #id = "024975" => "闵行房管(2024)预字0000256号"
     # Set up Chrome options
     chrome_options = webdriver.ChromeOptions()
-    #chrome_options.add_argument("--headless=new")  # Use new headless mode
+    chrome_options.add_argument("--headless=new")  # Use new headless mode
     chrome_options.add_argument("--window-size=1920,1080")  # Set window size
     chrome_options.add_argument("--disable-gpu")  # Disable GPU hardware acceleration
     chrome_options.add_argument("--no-sandbox")
